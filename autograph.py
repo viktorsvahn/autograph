@@ -28,7 +28,7 @@ from scipy.optimize import curve_fit
 ##############
 
 # Figure style. Choose between; standard, latex, latex-math.
-use_style = 'latex'
+use_style = 'standard'
 
 # Specify title and axis labels.
 plot_title = 'Title'
@@ -38,6 +38,7 @@ title_fontsize = 18
 axis_fontsize = 16
 axis_ticksize = 14
 scatter_point_type ='.' # See matplotlib documentation for variants, e.g. 'o', 's' etc.
+legend_position = '' # Set legend position. If empty 'best' is chosen.
 
 # Scales data according to given factors
 x_axis_factor = 1
@@ -250,7 +251,12 @@ plt.title(plot_title, fontsize=title_fontsize)
 plt.xlabel(x_axis_label, fontsize=axis_fontsize)
 plt.ylabel(y_axis_label, fontsize=axis_fontsize)
 plt.tick_params(labelsize=axis_ticksize)
-plt.legend(loc='best')
+
+if legend_position == '':
+	plt.legend(loc='best')
+else:
+	plt.legend(loc=legend_position)
+
 if savefile:
 	plt.savefig(
 		save_location+save_name+'.'+figure_format, 
