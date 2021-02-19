@@ -20,7 +20,6 @@ from scipy.optimize import curve_fit
 ##                                                                                                                                       ##
 ## -The script supports linear regression and mono-exponential fitting.                                                                  ##
 ##                                                                                                                                       ##
-##  Viktor Svahn, 2021-02-18                                                                                                             ##
 ###########################################################################################################################################
 
 ##############
@@ -33,7 +32,7 @@ x_axis_label = 'x'
 y_axis_label = 'y'
 
 # Set type of curve fitting and alpha on scatter points
-curve_fit_type = 'mono-exp' # Choose from: none, lin-reg, mono-exp.
+curve_fit_type = 'lin-reg' # Choose from: none, lin-reg, mono-exp.
 scatter_alpha_amount = 0.3 # Sets transparency of scatter points.
 
 # Output file specifics such as file- type, name, location.
@@ -44,11 +43,13 @@ save_location = ''
 
 # Input file location and filnames. Files takes a list of filenames with number of rows to skip in each file.
 # The skip functionality is used to ignore non-data rows of output files from instruments an such.
-# Ex. files = [ ['filename1', skiprows], ['filename2', skiprows] ]
 file_location = 'Data/'
+
+# Ex. files = [ ['filename1', skiprows, x-column, y-column, scale factor x-axis, scale factor y-axis],
+#				 ['filename2', skiprows, x-column, y-column, scale factor x-axis, scale factor y-axis] ]
 files = [
-	['exp_data', 0],
-	['exp_data2', 0]
+	#['IPCE_test', 2, 0, 3, 1, 1],
+	['data2', 0, 0, 1, 1, 1]
 ]
 
 
@@ -63,9 +64,6 @@ use_style = 'latex'
 resolution_dpi = 300
 figure_format = 'eps'
 
-
-
-
 # Plot specifics, fontsize, ticksize, scatter poit--type, legend position other than 'best'.
 set_fontsize = False
 title_fontsize = 18
@@ -75,25 +73,22 @@ scatter_point_type ='.' # See matplotlib documentation for variants, e.g. 'o', '
 legend_position = '' # Set legend position. If empty 'best' is chosen.
 
 
-# Axis scaling factor. Affects all input data equally.
-# Scales data according to given factors
-x_axis_factor = 1
-y_axis_factor = 1
-
-
 ###########################################################################################################################################
-###########################################################################################################################################
+## The section below contains the code. Do not alter this if you are unsure of what you are doing.                                       ##
 ###########################################################################################################################################
 
 
 # Handling of file list using dataframes. The use of data frames helps indexing while keeping
 # the structure of the file list above readable. This way the number of rows to skip is more
 # clearly associated with a specific file.
-files_df = pd.DataFrame(files, columns = ['Filename', 'Skiprows'])
+files_df = pd.DataFrame(files, columns = ['Filename', 'Skiprows', 'x-col.', 'y-col.', 'x-scale', 'y-scale'])
 files_index = files_df.index
+print('\n---------------------------------------------------------------------')
 print('Input:')
+print('---------------------------------------------------------------------')
 print(files_df)
-print('Make sure the correct number of lines are skipped in each data file.')
+print('---------------------------------------------------------------------')
+print('Make sure the correct number of lines are skipped and that the columns\nin each data file match.\n\n')
 
 
 ################
@@ -111,10 +106,10 @@ if use_style != 'standard':
 		matplotlib.rcParams['font.family'] = 'STIXGeneral'
 		matplotlib.pyplot.title(r'ABC123 vs $\mathrm{ABC123}^{123}$')
 
+
 ###############
 ## FUNCTIONS ##
 ###############
-
 
 def array_from_file(file, column, rowskip):
 	"""
@@ -211,25 +206,30 @@ output = []
 for i in files_index:
 	filename = files[i][0]
 	skiprows = files[i][1]
+	x_axis = files[i][2]
+	y_axis = files[i][3]
+	scale_x = files[i][4]
+	scale_y = files[i][5]
 
 	x_values = array_from_file(
 		file_location+filename,
-		0,
+		x_axis,
 		skiprows
-		)*x_axis_factor
+		)*scale_x
 	y_values = array_from_file(
 		file_location+filename, 
-		1, 
+		y_axis, 
 		skiprows
-		)*y_axis_factor
+		)*scale_y
 
 	if curve_fit_type == 'none':
 		plt.plot(
 			x_values, 
 			y_values, 
-			'.', 
+			scatter_point_type, 
 			label=filename,
 			alpha=scatter_alpha_amount
+
 			)
 
 	# Curve fiting.
@@ -258,7 +258,7 @@ for i in files_index:
 			plt.plot(
 				x, 
 				res.intercept + res.slope*x, 
-				label='$y= %6.5fx + %6.5f, \\quad R^2=%6.5f $' % (+round(res.slope, 4), round(res.intercept, 4), round(res.rvalue**2, 5)))
+				label='$y= %f x + %f, \\quad R^2=%f $' % (+round(res.slope, 5), round(res.intercept, 5), round(res.rvalue**2, 5)))
 
 		# Plots mono-exponential fit. Asborpion or emission type is detected by the integral sign.
 		elif curve_fit_type == 'mono-exp':
@@ -276,21 +276,41 @@ for i in files_index:
 				x_values[start_index:, ], 
 				exponential(x_values[start_index:, ], 
 				*popt), 
-				label='$y= %6.5E e^{ %6.5E t} %+6.5E $' % tuple(popt) 
+				label='$y= %E \\times e^{ %E t} %+E $' % tuple(popt) 
 				) 
 	
 # Results output in a DataFrame environment.
+if curve_fit_type != 'none':
+	if curve_fit_type == 'lin-reg':
+		output_df = pd.DataFrame(
+			output, 
+			columns = [ 
+			'Filename', 
+			'Intercept', 
+			'Slope', 
+			'R-squared'
+			] )
 
-if curve_fit_type == 'lin-reg':
-	output_df = pd.DataFrame(output, columns = [ 'Filename', 'Intercept', 'Slope', 'R-squared'] )
+	elif curve_fit_type == 'mono-exp':		
+		output_df = pd.DataFrame(
+			output, 
+			columns = [
+			 'Filename', 
+			 'Intercept', 
+			 'Slope', 
+			 'Error'
+			 ] )
+
+	pd.set_option('display.float_format', lambda x: '%.5E' % x)
+	print('\n---------------------------------------------------------------------')
 	print('Output:')
+	print('---------------------------------------------------------------------')
 	print(output_df)
-elif curve_fit_type == 'mono-exp':		
-	output_df = pd.DataFrame(output, columns = [ 'Filename', 'Intercept', 'Slope', 'Error'] )
-	print('Output:')
-	print(output_df)
+	print('---------------------------------------------------------------------')
 
 	
+
+# Plot settings, based on premables.
 if set_fontsize:
 	plt.title(plot_title, fontsize=title_fontsize)
 	plt.xlabel(x_axis_label, fontsize=axis_fontsize)
