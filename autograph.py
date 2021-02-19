@@ -26,20 +26,6 @@ from scipy.optimize import curve_fit
 ## PREAMBLE ##
 ##############
 
-# Specify title and axis labels.
-plot_title = 'Title'
-x_axis_label = 'x'
-y_axis_label = 'y'
-
-# Set type of curve fitting and alpha on scatter points
-curve_fit_type = 'lin-reg' # Choose from: none, lin-reg, mono-exp.
-scatter_alpha_amount = 0.3 # Sets transparency of scatter points.
-
-# Output file specifics such as file- type, name, location.
-show_plot = True
-savefile = False
-save_name = ''
-save_location = ''
 
 # Input file location and filnames. Files takes a list of filenames with number of rows to skip in each file.
 # The skip functionality is used to ignore non-data rows of output files from instruments an such.
@@ -47,10 +33,28 @@ file_location = 'Data/'
 
 # Ex. files = [ ['filename1', skiprows, x-column, y-column, scale factor x-axis, scale factor y-axis],
 #				 ['filename2', skiprows, x-column, y-column, scale factor x-axis, scale factor y-axis] ]
+# For regular plotting, set scaling to 1 on all axes.
 files = [
+	#['filename1', skiprows, x-column, y-column, scale factor x-axis, scale factor y-axis]
 	#['IPCE_test', 2, 0, 3, 1, 1],
 	['data2', 0, 0, 1, 1, 1]
 ]
+
+
+# Specify title and axis labels.
+plot_title = 'Title'
+x_axis_label = 'x'
+y_axis_label = 'y'
+
+# Set type of curve fitting and alpha on scatter points
+curve_fit_type = '' # Choose from: lin-reg, mono-exp. Leave empty '' if no fitting.
+scatter_alpha_amount = 0.3 # Sets transparency of scatter points.
+
+# Output file specifics such as file- type, name, location.
+show_plot = True
+savefile = False
+save_name = ''
+save_location = ''
 
 
 #######################
@@ -81,6 +85,7 @@ legend_position = '' # Set legend position. If empty 'best' is chosen.
 # Handling of file list using dataframes. The use of data frames helps indexing while keeping
 # the structure of the file list above readable. This way the number of rows to skip is more
 # clearly associated with a specific file.
+
 files_df = pd.DataFrame(files, columns = ['Filename', 'Skiprows', 'x-col.', 'y-col.', 'x-scale', 'y-scale'])
 files_index = files_df.index
 print('\n---------------------------------------------------------------------')
@@ -222,7 +227,7 @@ for i in files_index:
 		skiprows
 		)*scale_y
 
-	if curve_fit_type == 'none':
+	if curve_fit_type == '':
 		plt.plot(
 			x_values, 
 			y_values, 
@@ -233,7 +238,7 @@ for i in files_index:
 			)
 
 	# Curve fiting.
-	elif curve_fit_type != 'none':
+	else:
 		plt.plot(
 			x_values, 
 			y_values, 
@@ -280,7 +285,7 @@ for i in files_index:
 				) 
 	
 # Results output in a DataFrame environment.
-if curve_fit_type != 'none':
+if curve_fit_type != '':
 	if curve_fit_type == 'lin-reg':
 		output_df = pd.DataFrame(
 			output, 
