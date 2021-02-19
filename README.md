@@ -3,13 +3,10 @@ Automatically plots data from a given file. Settings such as style, curve fittin
 
 
 # Features:
--Only the premable needs to be filled out. The program automatically outputs a fitted curve according to the chosen type and values.
-
--All plotted files must be present in the same directory which must also be specified, unless the data is in the same folder as the script itself. The same goes for saving the figure.
-
--Filenames are specified within the file list.
-
--The script supports linear regression and mono-exponential fitting.
+- Only the premable needs to be filled out. The program automatically outputs a fitted curve according to the chosen type and values.
+- All plotted files must be present in the same directory which must also be specified, unless the data is in the same folder as the script itself. The same goes for saving the figure.
+- Filenames are specified within the file list.
+- The script supports linear regression and mono-exponential fitting.
 
 # HOW_TO
 Simplest version
@@ -23,3 +20,10 @@ Simplest version
 8.  Set 'savefile = True' and add a 'save_name' if a plot should be saved to the specified 'save_location'.
 9.  Run the script.
  
+# Dependencies
+The script depends on the following modules:
+- NumPy
+- Pandas
+- Math
+- Matplotlib
+- Scipy
