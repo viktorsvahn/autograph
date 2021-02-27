@@ -10,7 +10,7 @@ Automatically plots data from a given file. Settings such as style, curve fittin
 
 # HOW_TO
 Simplest version
-1. Add the script autograph.py to a preferred directory.
+1. Add the script autograph.py to a preferred directory. **Do not change the name of the script.**
 2. Change 'path_to_script' of the input file autograph_in.py to where autograph.py is located. From this point on, the script autograph.py can be ignored.
 3. Set data folder location by changing 'file_location'.
 4. Set load the correct data files in 'files'. Each file is entered within a list of the form: ['filename1', skiprows, x-column, y-column, scale factor x-axis, scale factor y-axis]. Skiprows refer to the number of non-data rows and the columns are specified such as column0=0, column1=1 etc. An externally determined scale factor can be used if needed.
