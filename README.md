@@ -23,7 +23,7 @@ Simplest version
 
 To make several plots just copy and rename the autograph_in.py script according to personal preference.
 
-# Dependencies
+# Used modules
 The script depends on the following modules:
 - NumPy
 - Pandas
