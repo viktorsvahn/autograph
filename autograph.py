@@ -5,8 +5,11 @@ import pandas as pd
 import math
 import matplotlib
 import matplotlib.pyplot as plt
+import matplotlib.pylab as pl
 from scipy import stats
 from scipy.optimize import curve_fit
+
+
 
 
 ###########################################################################################################################################
@@ -26,57 +29,6 @@ from scipy.optimize import curve_fit
 ## PREAMBLE ##
 ##############
 
-
-# Input file location and filnames. Files takes a list of filenames with number of rows to skip in each file.
-# The skip functionality is used to ignore non-data rows of output files from instruments an such.
-file_location = 'Data/'
-
-# Ex. files = [ ['filename1', skiprows, x-column, y-column, scale factor x-axis, scale factor y-axis],
-#				 ['filename2', skiprows, x-column, y-column, scale factor x-axis, scale factor y-axis] ]
-# For regular plotting, set scaling to 1 on all axes.
-files = [
-	#['filename1', skiprows, x-column, y-column, scale factor x-axis, scale factor y-axis]
-	#['IPCE_test', 2, 0, 3, 1, 1],
-	['data2', 0, 0, 1, 1, 1]
-]
-
-
-# Specify title and axis labels.
-plot_title = 'Title'
-x_axis_label = 'x'
-y_axis_label = 'y'
-
-# Set type of curve fitting and alpha on scatter points
-curve_fit_type = '' # Choose from: lin-reg, mono-exp. Leave empty '' if no fitting.
-scatter_alpha_amount = 0.3 # Sets transparency of scatter points.
-
-# Output file specifics such as file- type, name, location.
-show_plot = True
-savefile = False
-save_name = ''
-save_location = ''
-
-
-#######################
-## ADVANCED SETTINGS ##
-#######################
-
-# Figure style. Choose between; standard, latex, latex-math.
-use_style = 'latex'
-
-# Input output file specifics such as file- type, name, resoltion.
-resolution_dpi = 300
-figure_format = 'eps'
-
-# Plot specifics, fontsize, ticksize, scatter poit--type, legend position other than 'best'.
-set_fontsize = False
-title_fontsize = 18
-axis_fontsize = 16
-axis_ticksize = 14
-scatter_point_type ='.' # See matplotlib documentation for variants, e.g. 'o', 's' etc.
-legend_position = '' # Set legend position. If empty 'best' is chosen.
-
-
 ###########################################################################################################################################
 ## The section below contains the code. Do not alter this if you are unsure of what you are doing.                                       ##
 ###########################################################################################################################################
@@ -86,7 +38,7 @@ legend_position = '' # Set legend position. If empty 'best' is chosen.
 # the structure of the file list above readable. This way the number of rows to skip is more
 # clearly associated with a specific file.
 
-files_df = pd.DataFrame(files, columns = ['Filename', 'Skiprows', 'x-col.', 'y-col.', 'x-scale', 'y-scale'])
+files_df = pd.DataFrame(files, columns = ['Filename', 'Skiprows', 'x-col.', 'y-col.', 'x-scale', 'y-scale', 'Marker'])
 files_index = files_df.index
 print('\n---------------------------------------------------------------------')
 print('Input:')
@@ -134,11 +86,11 @@ def find_nearest(array, value):
 	idx = (np.abs(array - value)).argmin()
 	return array[idx]
 
-def exponential(x, a, b, c):
+def mono_exponential(x, a, b, c):
 	"""
 	Defines an exponential functions to be fit to data points.
 	"""
-	return a * np.exp(b * x) + c
+	return a * np.exp(-b * x) + c
 
 def linear_fit(x,y):
 	"""
@@ -163,33 +115,36 @@ def mono_exp_fit(x,y):
 	These are, respectively, the intercepts as well.
 	"""
 
-	
 	# Slope estimation. Index of mid y-value is found. 
 	y_half = find_nearest(y, ( max(y) + min(y) )/2 )
 	y_half_id = np.where( y == y_half )
 	x_at_half_y = x[ y_half_id ]
-	slope_guess = -float( np.log(2)/x_at_half_y )
+	slope_guess = float( np.log(2)/x_at_half_y )
 	
+
 	# Number of values error_guess is based on.
 	error_lower_bound_index = math.ceil(len(y)*0.02)
 
-	if slope_guess > 0:
+	if slope_guess < 0:
+		start_index = 0
 		error_guess = np.mean( y[:error_lower_bound_index] )
 		x_zero = find_nearest(x, 0)
 		x_zero_index = np.where( x == x_zero )
 		intercept_guess = float( y[ x_zero_index ])
-		result = [ intercept_guess, slope_guess, error_guess ]
-		print(result)
+		#result = [ intercept_guess, slope_guess, error_guess ]
+		#print(result)
 	else:
 		error_guess = np.mean( y[-error_lower_bound_index:] )
 		if y_half > 0:
+			start_index = np.argmax(y)
 			intercept_guess = max(y)
 		else:
+			start_index = np.argmin(y)
 			intercept_guess = min(y)
 
 	# Curve fitting.
 	popt, pcov = curve_fit(
-		exponential, 
+		mono_exponential, 
 		x[start_index:, ], 
 		y[start_index:, ], 
 		p0=(
@@ -200,143 +155,210 @@ def mono_exp_fit(x,y):
 		)
 	return popt, pcov
 
-
 ##########
 ## PLOT ##
 ##########
 
 output = []
 
-# For loop that iterates and plots over all specfied files.
-for i in files_index:
-	filename = files[i][0]
-	skiprows = files[i][1]
-	x_axis = files[i][2]
-	y_axis = files[i][3]
-	scale_x = files[i][4]
-	scale_y = files[i][5]
+#colors_n = 20
+#colors = pylab.cm.colormap( np.linspace(0,1,colors_n) )
 
-	x_values = array_from_file(
-		file_location+filename,
-		x_axis,
-		skiprows
-		)*scale_x
-	y_values = array_from_file(
-		file_location+filename, 
-		y_axis, 
-		skiprows
-		)*scale_y
+if normalize_data_auc and normalize_data_max_value:
+	print('Only one type of normalization is allowed.')
 
-	if curve_fit_type == '':
-		plt.plot(
-			x_values, 
-			y_values, 
-			scatter_point_type, 
-			label=filename,
-			alpha=scatter_alpha_amount
+else:
+	# For loop that iterates and plots over all specfied files.
+	for i in files_index:
+		filename = files[i][0]
+		skiprows = files[i][1]
+		x_axis = files[i][2]
+		y_axis = files[i][3]
+		scale_x = files[i][4]
+		scale_y = files[i][5]
+		
+		if files[i][6] == '':
+			marker_type = scatter_point_type
+		else:
+			marker_type = files[i][6]
 
-			)
-
-	# Curve fiting.
-	else:
-		plt.plot(
-			x_values, 
-			y_values, 
-			scatter_point_type, 
-			label=filename, 
-			alpha=scatter_alpha_amount
-			)
-		x = np.linspace(
-			min(x_values), 
-			max(x_values), 
-			len(x_values)*1e3
-			)
-
-		# Plots linear regression
-		if curve_fit_type == 'lin-reg':
-			res = linear_fit(x_values, y_values)
-
-			# Prepare result ouput.
-			result = [ filename, res.intercept, res.slope, res.rvalue**2 ]
-			output.append(result)
-
-			plt.plot(
-				x, 
-				res.intercept + res.slope*x, 
-				label='$y= %f x + %f, \\quad R^2=%f $' % (+round(res.slope, 5), round(res.intercept, 5), round(res.rvalue**2, 5)))
-
-		# Plots mono-exponential fit. Asborpion or emission type is detected by the integral sign.
-		elif curve_fit_type == 'mono-exp':
-			if np.trapz(y_values, x=x_values) > 0:
-				start_index = np.argmax(y_values)
+		x_values = array_from_file(
+			file_location+filename,
+			x_axis,
+			skiprows
+			)*scale_x
+		if x_log_scale[0]:
+			if x_log_scale[1] == '2' or 2:
+				x_values = np.log2(x_values)
+			if x_log_scale[1] == 'e':
+				x_values = np.log(x_values)
+			elif x_log_scale[1] == '10' or 10:
+				x_values = np.log10(x_values)
 			else:
-				start_index = np.argmin(y_values)
-			popt, pcov = mono_exp_fit(x_values, y_values)
+				print('Unsupported base.')
 
-			# Prepare result ouput.
-			result = [ filename, popt[0], popt[1], popt[2] ]
-			output.append(result)			
+		y_values = array_from_file(
+			file_location+filename, 
+			y_axis, 
+			skiprows
+			)*scale_y
+		if y_log_scale[0]:
+			if y_log_scale[1] == '2' or 2:
+				y_values = np.log2(y_values)
+			if y_log_scale[1] == 'e':
+				y_values = np.log(y_values)
+			elif y_log_scale[1] == '10' or 10:
+				y_values = np.log10(y_values)
+			else:
+				print('Unsupported base.')
 
+		if normalize_data_auc:
+			normalization_factor = np.trapz(y_values, x=x_values)
+			y_values = y_values/abs( normalization_factor )
+		elif normalize_data_max_value:
+			normalization_factor = max(y_values)
+			y_values = y_values/normalization_factor
+
+
+		if curve_fit_type == '':
 			plt.plot(
-				x_values[start_index:, ], 
-				exponential(x_values[start_index:, ], 
-				*popt), 
-				label='$y= %E \\times e^{ %E t} %+E $' % tuple(popt) 
-				) 
-	
-# Results output in a DataFrame environment.
-if curve_fit_type != '':
-	if curve_fit_type == 'lin-reg':
-		output_df = pd.DataFrame(
-			output, 
-			columns = [ 
-			'Filename', 
-			'Intercept', 
-			'Slope', 
-			'R-squared'
-			] )
+				x_values, 
+				y_values, 
+				marker_type,
+				label=filename,
+				alpha=scatter_alpha_amount,
+				markevery=mark_every
+				)
 
-	elif curve_fit_type == 'mono-exp':		
-		output_df = pd.DataFrame(
-			output, 
-			columns = [
-			 'Filename', 
-			 'Intercept', 
-			 'Slope', 
-			 'Error'
-			 ] )
+		# Curve fitting.
+		else:
+			plt.plot(
+				x_values, 
+				y_values, 
+				marker_type,
+				label=filename,
+				alpha=scatter_alpha_amount,
+				markevery=mark_every
+				)
+			x = np.linspace(
+				min(x_values), 
+				max(x_values), 
+				len(x_values)*1e2
+				)
 
-	pd.set_option('display.float_format', lambda x: '%.5E' % x)
-	print('\n---------------------------------------------------------------------')
-	print('Output:')
-	print('---------------------------------------------------------------------')
-	print(output_df)
-	print('---------------------------------------------------------------------')
+			# Plots linear regression
+			if curve_fit_type == 'lin-reg':
+				res = linear_fit(x_values, y_values)
 
-	
+				# Prepare result ouput.
+				result = [ filename, res.intercept, res.slope, res.rvalue**2 ]
+				output.append(result)
 
-# Plot settings, based on premables.
-if set_fontsize:
-	plt.title(plot_title, fontsize=title_fontsize)
-	plt.xlabel(x_axis_label, fontsize=axis_fontsize)
-	plt.ylabel(y_axis_label, fontsize=axis_fontsize)
-	plt.tick_params(labelsize=axis_ticksize)
-else:
-	plt.title(plot_title)
-	plt.xlabel(x_axis_label)
-	plt.ylabel(y_axis_label)
+				plt.plot(
+					x, 
+					res.intercept + res.slope*x,
+					label='$y= %f x + %f, \\quad R^2=%f $' % (+round(res.slope, 5), round(res.intercept, 5), round(res.rvalue**2, 5)),
+					linewidth=curve_fit_linewidth
+					)
 
-if legend_position == '':
-	plt.legend(loc='best')
-else:
-	plt.legend(loc=legend_position)
+			# Plots mono-exponential fit. Asborpion or emission type is detected by the integral sign.
+			elif curve_fit_type == 'mono-exp':
+				popt, pcov = mono_exp_fit(x_values, y_values)
 
-if savefile:
-	plt.savefig(
-		save_location+save_name+'.'+figure_format, 
-		dpi=resolution_dpi, 
-		format=figure_format
+				slope = popt[1]
+				y_half = find_nearest(y_values, ( max(y_values) + min(y_values) )/2 )
+
+				if slope < 0:
+					start_index = x_values[0]
+				else:
+					if y_half > 0:
+						start_index = np.argmax(y_values)
+					else:
+						start_index = np.argmin(y_values)
+
+
+				#print(pcov)
+				# Prepare result ouput.
+				result = [ filename, popt[0], -popt[1], popt[2] ]
+				output.append(result)			
+
+				plt.plot(
+					x_values[start_index:, ], 
+					mono_exponential(x_values[start_index:, ], 
+					*popt),
+					label='$y= %E \\times e^{ %E t} %+E $' % (popt[0], -popt[1], popt[2]),
+					linewidth=curve_fit_linewidth
+					) 
+		
+	# Results output in a DataFrame environment.
+	if curve_fit_type != '':
+		if curve_fit_type == 'lin-reg':
+			output_df = pd.DataFrame(
+				output, 
+				columns = [ 
+				'Filename', 
+				'Intercept', 
+				'Slope', 
+				'R-squared'
+				] )
+
+		elif curve_fit_type == 'mono-exp':		
+			output_df = pd.DataFrame(
+				output, 
+				columns = [
+				 'Filename', 
+				 'Intercept', 
+				 'Slope', 
+				 'Error'
+				 ] )
+
+		pd.set_option('display.float_format', lambda x: '%.5E' % x)
+		print('\n---------------------------------------------------------------------')
+		print('Output:')
+		print('---------------------------------------------------------------------')
+		print(output_df)
+		print('---------------------------------------------------------------------')
+
+
+	# Plot settings, based on premable.
+	plt.title(
+		plot_title, 
+		fontsize=title_fontsize
 		)
+	plt.xlabel(
+		x_axis_label, 
+		fontsize=axis_fontsize
+		)
+	plt.ylabel(
+		y_axis_label, 
+		fontsize=axis_fontsize
+		)
+	plt.tick_params(
+		labelsize=axis_ticksize,
+		direction='tick_direction',
+		length=axis_ticksize*0.35, 
+		bottom=True,
+		top=False, 
+		left=True,
+		right=False
+		)
+	plt.xlim(x_axis_limits)
+	plt.ylim(y_axis_limits)
 
-if show_plot:
-	plt.show()
+
+
+
+	if legend_position == '':
+		plt.legend(loc='best', shadow=legend_shadow)
+	else:
+		plt.legend(loc=legend_position, shadow=legend_shadow)
+
+	if savefile:
+		plt.savefig(
+			save_location+save_name+'.'+figure_format, 
+			dpi=resolution_dpi, 
+			format=figure_format
+			)
+
+	if show_plot:
+		plt.show()
