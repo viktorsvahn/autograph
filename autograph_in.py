@@ -2,7 +2,8 @@
 ## PREAMBLE ##
 ##############
 
-path_to_script = '' # Must end with a slash ('/').
+# Enter path to the script autograph.py. Path must end with a slash ('/').
+path_to_script = '/home/viktor/Documents/Coding/Python/autograph/'
 
 # Input file location and filnames. Files takes a list of filenames with number of rows to skip in each file.
 # The skip functionality is used to ignore non-data rows of output files from instruments an such.
@@ -54,7 +55,7 @@ tick_direction = 'in' # Choose from in, out and inout.
 scatter_point_type ='.' # See matplotlib documentation for variants, e.g. 'o', 's' etc.
 mark_every =  None # For 'mark_every=N' the each plot contains every Nth point in a scatter plot. Set None to mark all points.
 legend_position = '' # Set legend position. If empty 'best' is chosen.
-legend_shadow = True	
+legend_shadow = True
 
 # Sets log-scale on specified axis by setting the bool-of-choice in the tuples. Choose from bases 2, e and 10 and enter either str or int.
 x_log_scale = (False, 'e')
@@ -67,5 +68,6 @@ y_axis_limits = None
 # Normalization of data by are-under-curve or maximum value.
 normalize_data_max_value = False
 normalize_data_auc = False
+
 
 exec(open(path_to_script+'autograph.py').read())
