@@ -3,7 +3,7 @@
 ##############
 
 # Enter path to the script autograph.py. Path must end with a slash ('/').
-path_to_script = '/home/viktor/Documents/Coding/Python/autograph/'
+path_to_script = ''
 
 # Input file location and filnames. Files takes a list of filenames with number of rows to skip in each file.
 # The skip functionality is used to ignore non-data rows of output files from instruments an such.
