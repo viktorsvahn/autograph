@@ -1,4 +1,3 @@
-
 ##############
 ## PREAMBLE ##
 ##############
@@ -15,12 +14,7 @@ file_location = 'Data/'
 files = [
 	#['filename1', skiprows, x-column, y-column, scale factor x-axis, scale factor y-axis, alternative marker type]
 	['exp_data', 0, 0, 1, 1, 1, ''],
-	#['exp_data', 0, 0, 1, 1, 1e-1, ''],
-	#['exp_data', 0, 0, 1, 1, 1e-2, ''],
-	#['exp_data2', 0, 0, 1, 1, 1, ''],	
-	#['IRF1ns.txt', 10, 0, 1, 0.0132, 1, '']
 ]
-
 
 
 # Specify title and axis labels.
@@ -29,9 +23,9 @@ x_axis_label = 'x'
 y_axis_label = 'y'
 
 # Set type of curve fitting and alpha on scatter points
-curve_fit_type = 'mono-exp' # Choose from: lin-reg, mono-exp. Leave empty '' if no fitting.
-curve_fit_linewidth = 2
-scatter_alpha_amount = 0.5# # Sets transparency of scatter points.
+curve_fit_type = '' # Choose from: lin-reg, mono-exp. Leave empty '' if no fitting.
+curve_fit_linewidth = 2 # Sets linewidth of fited curve.
+scatter_alpha_amount = 0.5	# # Sets transparency of scatter points.
 
 # Output file specifics such as file- type, name, location.
 show_plot = True

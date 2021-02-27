@@ -10,30 +10,6 @@ from scipy import stats
 from scipy.optimize import curve_fit
 
 
-
-
-###########################################################################################################################################
-##  README:                                                                                                                              ##
-## -Only the premable needs to be filled out. The program automatically outputs a fitted curve according to the chosen type and values.  ##
-##                                                                                                                                       ##
-## -All plotted files must be present in the same directory which must also be specified, unless the data is in the same folder as the   ##
-##  script itself. The same goes for saving the figure.                                                                                  ##
-##                                                                                                                                       ##
-## -Filenames are specified within the file list.                                                                                        ##
-##                                                                                                                                       ##
-## -The script supports linear regression and mono-exponential fitting.                                                                  ##
-##                                                                                                                                       ##
-###########################################################################################################################################
-
-##############
-## PREAMBLE ##
-##############
-
-###########################################################################################################################################
-## The section below contains the code. Do not alter this if you are unsure of what you are doing.                                       ##
-###########################################################################################################################################
-
-
 # Handling of file list using dataframes. The use of data frames helps indexing while keeping
 # the structure of the file list above readable. This way the number of rows to skip is more
 # clearly associated with a specific file.
