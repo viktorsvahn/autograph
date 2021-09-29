@@ -3,18 +3,20 @@
 import numpy as np
 import pandas as pd
 import math
-import matplotlib
+import matplotlib as mpl
 import matplotlib.pyplot as plt
 import matplotlib.pylab as pl
 from scipy import stats
 from scipy.optimize import curve_fit
-
+from cycler import *
+from matplotlib import cm
+from matplotlib.colors import ListedColormap,LinearSegmentedColormap
 
 # Handling of file list using dataframes. The use of data frames helps indexing while keeping
 # the structure of the file list above readable. This way the number of rows to skip is more
 # clearly associated with a specific file.
 
-files_df = pd.DataFrame(files, columns = ['Filename', 'Skiprows', 'x-col.', 'y-col.', 'x-scale', 'y-scale', 'Marker'])
+files_df = pd.DataFrame(files, columns = ['Filename', 'Skiprows', 'x-col.', 'y-col.', 'x-scale', 'y-scale', 'Marker', 'Label'])
 files_index = files_df.index
 print('\n---------------------------------------------------------------------')
 print('Input:')
@@ -23,7 +25,6 @@ print(files_df)
 print('---------------------------------------------------------------------')
 print('Make sure the correct number of lines are skipped and that the columns\nin each data file match.\n\n')
 
-
 ################
 ## FORMATTING ##
 ################
@@ -31,13 +32,13 @@ print('Make sure the correct number of lines are skipped and that the columns\ni
 # Sets style according to whats set in the preamble.
 if use_style != 'standard':
 	if use_style == 'latex':
-		matplotlib.rcParams['mathtext.fontset'] = 'stix'
-		matplotlib.rcParams['font.family'] = 'STIXGeneral'
-		matplotlib.pyplot.title(r'ABC123 vs $\mathrm{ABC123}^{123}$')
+		mpl.rcParams['mathtext.fontset'] = 'stix'
+		mpl.rcParams['font.family'] = 'STIXGeneral'
+		#plt.title(r'ABC123 vs $\mathrm{ABC123}^{123}$')
 	elif use_style == 'latex-math':
-		matplotlib.rcParams['mathtext.fontset'] = 'stix'
-		matplotlib.rcParams['font.family'] = 'STIXGeneral'
-		matplotlib.pyplot.title(r'ABC123 vs $\mathrm{ABC123}^{123}$')
+		mpl.rcParams['mathtext.fontset'] = 'stix'
+		mpl.rcParams['font.family'] = 'STIXGeneral'
+		#plt.title(r'ABC123 vs $\mathrm{ABC123}^{123}$')
 
 
 ###############
@@ -135,10 +136,28 @@ def mono_exp_fit(x,y):
 ## PLOT ##
 ##########
 
+fig = plt.figure(figsize=figure_size)
+ax = plt.axes()
+
+# Defines colormaps used in the plot
+if colormap == '':
+	None
+elif colormap == 'viridis':
+	colors = pl.cm.viridis(np.linspace(0,1, len(files)))
+	ax.set_prop_cycle(cycler('color', colors) )
+
+elif colormap == 'magma':
+	colors = pl.cm.magma(np.linspace(0,1, len(files)))
+	ax.set_prop_cycle(cycler('color', colors) )
+elif colormap == 'plasma':
+	colors = pl.cm.plasma(np.linspace(0,1, len(files)))
+	ax.set_prop_cycle(cycler('color', colors) )
+elif colormap == 'inferno':
+	colors = pl.cm.inferno(np.linspace(0,1, len(files)))
+	ax.set_prop_cycle(cycler('color', colors) )
+
 output = []
 
-#colors_n = 20
-#colors = pylab.cm.colormap( np.linspace(0,1,colors_n) )
 
 if normalize_data_auc and normalize_data_max_value:
 	print('Only one type of normalization is allowed.')
@@ -152,11 +171,15 @@ else:
 		y_axis = files[i][3]
 		scale_x = files[i][4]
 		scale_y = files[i][5]
-		
 		if files[i][6] == '':
 			marker_type = scatter_point_type
 		else:
 			marker_type = files[i][6]
+		if files[i][7] == '':
+			plot_label = filename
+		else:
+			plot_label = files[i][7]
+
 
 		x_values = array_from_file(
 			file_location+filename,
@@ -186,7 +209,7 @@ else:
 			elif y_log_scale[1] == '10' or 10:
 				y_values = np.log10(y_values)
 			else:
-				print('Unsupported base.')
+				print('Unsupported logarithmic base. Log scale must be natural, 2 or 10.')
 
 		if normalize_data_auc:
 			normalization_factor = np.trapz(y_values, x=x_values)
@@ -197,11 +220,11 @@ else:
 
 
 		if curve_fit_type == '':
-			plt.plot(
+			ax.plot(
 				x_values, 
 				y_values, 
 				marker_type,
-				label=filename,
+				label=plot_label,
 				alpha=scatter_alpha_amount,
 				markevery=mark_every
 				)
@@ -212,7 +235,7 @@ else:
 				x_values, 
 				y_values, 
 				marker_type,
-				label=filename,
+				label=plot_label,
 				alpha=scatter_alpha_amount,
 				markevery=mark_every
 				)
@@ -233,7 +256,7 @@ else:
 				plt.plot(
 					x, 
 					res.intercept + res.slope*x,
-					label='$y= %f x + %f, \\quad R^2=%f $' % (+round(res.slope, 5), round(res.intercept, 5), round(res.rvalue**2, 5)),
+					label='$y= {:E} x {:+E}, \\quad R^2={:f} $'.format(res.slope, res.intercept, res.rvalue**2),
 					linewidth=curve_fit_linewidth
 					)
 
@@ -297,19 +320,19 @@ else:
 
 
 	# Plot settings, based on premable.
-	plt.title(
+	ax.set_title(
 		plot_title, 
 		fontsize=title_fontsize
 		)
-	plt.xlabel(
+	ax.set_xlabel(
 		x_axis_label, 
 		fontsize=axis_fontsize
 		)
-	plt.ylabel(
+	ax.set_ylabel(
 		y_axis_label, 
 		fontsize=axis_fontsize
 		)
-	plt.tick_params(
+	ax.tick_params(
 		labelsize=axis_ticksize,
 		direction='tick_direction',
 		length=axis_ticksize*0.35, 
@@ -318,16 +341,14 @@ else:
 		left=True,
 		right=False
 		)
-	plt.xlim(x_axis_limits)
-	plt.ylim(y_axis_limits)
-
-
+	ax.set_xlim(x_axis_limits)
+	ax.set_ylim(y_axis_limits)
 
 
 	if legend_position == '':
-		plt.legend(loc='best', shadow=legend_shadow)
+		ax.legend(loc='best', shadow=legend_shadow)
 	else:
-		plt.legend(loc=legend_position, shadow=legend_shadow)
+		ax.legend(loc=legend_position, shadow=legend_shadow)
 
 	if savefile:
 		plt.savefig(
