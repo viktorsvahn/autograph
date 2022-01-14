@@ -108,8 +108,6 @@ def mono_exp_fit(x,y):
 		x_zero = find_nearest(x, 0)
 		x_zero_index = np.where( x == x_zero )
 		intercept_guess = float( y[ x_zero_index ])
-		#result = [ intercept_guess, slope_guess, error_guess ]
-		#print(result)
 	else:
 		error_guess = np.mean( y[-error_lower_bound_index:] )
 		if y_half > 0:
@@ -142,19 +140,33 @@ ax = plt.axes()
 # Defines colormaps used in the plot
 if colormap == '':
 	None
-elif colormap == 'viridis':
-	colors = pl.cm.viridis(np.linspace(0,1, len(files)))
-	ax.set_prop_cycle(cycler('color', colors) )
+if reverse_colormap:
+	if colormap == 'viridis':
+		colors = pl.cm.viridis_r(np.linspace(colormap_range[0], colormap_range[1], len(files)))
+		ax.set_prop_cycle(cycler('color', colors) )
+	elif colormap == 'magma':
+		colors = pl.cm.magma_r(np.linspace(colormap_range[0], colormap_range[1], len(files)))
+		ax.set_prop_cycle(cycler('color', colors) )
+	elif colormap == 'plasma':
+		colors = pl.cm.plasma_r(np.linspace(colormap_range[0], colormap_range[1], len(files)))
+		ax.set_prop_cycle(cycler('color', colors) )
+	elif colormap == 'inferno':
+		colors = pl.cm.inferno_r(np.linspace(colormap_range[0], colormap_range[1], len(files)))
+		ax.set_prop_cycle(cycler('color', colors) )
 
-elif colormap == 'magma':
-	colors = pl.cm.magma(np.linspace(0,1, len(files)))
-	ax.set_prop_cycle(cycler('color', colors) )
-elif colormap == 'plasma':
-	colors = pl.cm.plasma(np.linspace(0,1, len(files)))
-	ax.set_prop_cycle(cycler('color', colors) )
-elif colormap == 'inferno':
-	colors = pl.cm.inferno(np.linspace(0,1, len(files)))
-	ax.set_prop_cycle(cycler('color', colors) )
+else:
+	if colormap == 'viridis':
+		colors = pl.cm.viridis(np.linspace(colormap_range[0], colormap_range[1], len(files)))
+		ax.set_prop_cycle(cycler('color', colors) )
+	elif colormap == 'magma':
+		colors = pl.cm.magma(np.linspace(colormap_range[0], colormap_range[1], len(files)))
+		ax.set_prop_cycle(cycler('color', colors) )
+	elif colormap == 'plasma':
+		colors = pl.cm.plasma(np.linspace(colormap_range[0], colormap_range[1], len(files)))
+		ax.set_prop_cycle(cycler('color', colors) )
+	elif colormap == 'inferno':
+		colors = pl.cm.inferno(np.linspace(colormap_range[0], colormap_range[1], len(files)))
+		ax.set_prop_cycle(cycler('color', colors) )
 
 output = []
 
@@ -171,15 +183,16 @@ else:
 		y_axis = files[i][3]
 		scale_x = files[i][4]
 		scale_y = files[i][5]
+		
 		if files[i][6] == '':
 			marker_type = scatter_point_type
 		else:
 			marker_type = files[i][6]
+		
 		if files[i][7] == '':
 			plot_label = filename
 		else:
 			plot_label = files[i][7]
-
 
 		x_values = array_from_file(
 			file_location+filename,
@@ -215,9 +228,8 @@ else:
 			normalization_factor = np.trapz(y_values, x=x_values)
 			y_values = y_values/abs( normalization_factor )
 		elif normalize_data_max_value:
-			normalization_factor = max(y_values)
+			normalization_factor = max(abs(y_values))
 			y_values = y_values/normalization_factor
-
 
 		if curve_fit_type == '':
 			ax.plot(
@@ -260,8 +272,9 @@ else:
 					linewidth=curve_fit_linewidth
 					)
 
-			# Plots mono-exponential fit. Asborpion or emission type is detected by the integral sign.
+			# Plots mono-exponential fit. Sign of intercept is same as the sign of the y-value mean.
 			elif curve_fit_type == 'mono-exp':
+				# Fot data to mono-exp function
 				popt, pcov = mono_exp_fit(x_values, y_values)
 
 				slope = popt[1]
@@ -341,10 +354,23 @@ else:
 		left=True,
 		right=False
 		)
+
 	ax.set_xlim(x_axis_limits)
 	ax.set_ylim(y_axis_limits)
 
+	# Inverts axes.
+	if x_axis_invert:
+		plt.gca().invert_xaxis()
+	if y_axis_invert:
+		plt.gca().invert_yaxis()
 
+	if set_xticks:
+		plt.xticks(x_values, set_xticks)
+
+		plt.setp(ax.get_xticklabels(), rotation=xticks_angle, horizontalalignment='right')
+
+
+	plt.tight_layout()
 	if legend_position == '':
 		ax.legend(loc='best', shadow=legend_shadow)
 	else:
